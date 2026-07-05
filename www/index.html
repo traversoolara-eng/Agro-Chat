@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Agro-Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg: #EFEAD8;
+    --paper: #FBF8EE;
+    --ink: #202B22;
+    --ink-soft: #52594F;
+    --primary: #2F5233;
+    --primary-dark: #1D3620;
+    --accent: #C99A2E;
+    --accent-soft: #EADCB2;
+    --soil: #8B5A2B;
+    --soil-soft: #E7D6C2;
+    --sky: #3F6E86;
+    --sky-soft: #DCE7EA;
+    --danger: #9C4430;
+    --line: rgba(32,43,34,0.14);
+    --radius: 10px;
+    --shadow: 0 2px 10px rgba(32,43,34,0.08), 0 1px 2px rgba(32,43,34,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(180deg, rgba(47,82,51,0.035) 0px, rgba(47,82,51,0.035) 1px, transparent 1px, transparent 34px);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .mono{ font-family: 'IBM Plex Mono', monospace; }
+  button{ font-family: inherit; cursor:pointer; }
+  input, select, textarea{ font-family: inherit; }
+  ::selection{ background: var(--accent-soft); }
+
+  /* ---------- Onboarding ---------- */
+  #onboarding{
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 32px 20px;
+  }
+  .onboarding-card{
+    max-width: 640px;
+    width: 100%;
+    text-align:center;
+  }
+  .brandmark{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 22px;
+  }
+  .brandmark svg{ width:34px; height:34px; }
+  .brandmark span{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size: 26px;
+    color: var(--primary-dark);
+  }
+  .onboarding-card h1{
+    font-size: 40px;
+    margin: 0 0 10px;
+    color: var(--primary-dark);
+  }
+  .onboarding-card p.lede{
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height: 1.55;
+    max-width: 480px;
+    margin: 0 auto 34px;
+  }
+  .furrow{
+    width: 100%;
+    height: 14px;
+    margin: 0 auto 34px;
+    max-width: 300px;
+    opacity: 0.55;
+  }
+  .profile-choices{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 560px){ .profile-choices{ grid-template-columns: 1fr; } }
+  .profile-card{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 20px;
+    text-align:left;
+    box-shadow: var(--shadow);
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .profile-card:hover{ transform: translateY(-2px); border-color: var(--primary); }
+  .profile-card button{
+    width:100%;
+    background:none;
+    border:none;
+    text-align:left;
+    padding:0;
+  }
+  .profile-card .icon-wrap{
+    width:44px; height:44px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom: 14px;
+  }
+  .profile-card.agri .icon-wrap{ background: var(--accent-soft); }
+  .profile-card.gana .icon-wrap{ background: var(--soil-soft); }
+  .profile-card h3{ margin: 0 0 6px; font-size: 19px; color: var(--primary-dark);}
+  .profile-card p{ margin:0; font-size: 13.5px; color: var(--ink-soft); line-height:1.45;}
+
+  /* ---------- App shell ---------- */
+  #app{ display:none; min-height:100vh; flex-direction:column; }
+  .app-header{
+    background: var(--primary-dark);
+    color: #F5F2E6;
+    padding: 16px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position: sticky; top:0; z-index: 10;
+  }
+  .app-header .left{ display:flex; align-items:center; gap:10px; }
+  .app-header .left svg{ width:26px; height:26px; }
+  .app-header .left span{ font-family:'Fraunces', serif; font-weight:700; font-size:20px; }
+  .profile-badge{
+    display:flex; align-items:center; gap:10px;
+  }
+  .profile-badge .stamp{
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .profile-badge button{
+    background:none; border:none; color:#D8D2BB; font-size:12.5px;
+    text-decoration:underline; text-underline-offset:2px;
+  }
+  .tabs{
+    display:flex;
+    gap: 4px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    padding: 0 20px;
+  }
+  .tab-btn{
+    background:none; border:none;
+    padding: 14px 16px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    border-bottom: 3px solid transparent;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tab-btn svg{ width:16px; height:16px; opacity:0.8; }
+  .tab-btn.active{ color: var(--primary-dark); border-bottom-color: var(--accent); }
+  .panel{ flex:1; display:none; max-width: 920px; width:100%; margin:0 auto; padding: 22px 20px 60px; }
+  .panel.active{ display:block; }
+
+  /* ---------- Chat ---------- */
+  #chatWindow{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    height: 58vh;
+    min-height: 360px;
+    overflow-y: auto;
+    padding: 20px;
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+  }
+  .msg{ max-width: 78%; padding: 11px 14px; border-radius: 12px; font-size:14.5px; line-height:1.5; animation: rise 0.2s ease; white-space: pre-wrap;}
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .msg.user{ align-self:flex-end; background: var(--primary); color:#fff; border-bottom-right-radius:3px; }
+  .msg.bot{ align-self:flex-start; background: var(--sky-soft); color: var(--ink); border-bottom-left-radius:3px; }
+  .msg.bot.error{ background: #F3DCD3; color: var(--danger); }
+  .typing{ align-self:flex-start; display:flex; gap:4px; padding: 12px 14px; }
+  .typing span{ width:6px; height:6px; border-radius:50%; background: var(--sky); opacity:0.5; animation: blink 1.1s infinite; }
+  .typing span:nth-child(2){ animation-delay: 0.15s; }
+  .typing span:nth-child(3){ animation-delay: 0.3s; }
+  @keyframes blink{ 0%,80%,100%{opacity:0.25;} 40%{opacity:0.9;} }
+  .chat-input-row{ display:flex; gap:10px; margin-top: 14px; }
+  #chatInput{
+    flex:1; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 14px; font-size: 14.5px; background:#fff; resize:none;
+  }
+  #chatInput:focus{ outline: 2px solid var(--sky); outline-offset: 1px; }
+  .send-btn{
+    background: var(--primary); color:#fff; border:none; border-radius: var(--radius);
+    padding: 0 20px; font-weight:600; font-size:14px;
+  }
+  .send-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .suggestions{ display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+  .chip{
+    background: var(--paper); border:1px solid var(--line); border-radius:999px;
+    padding: 7px 13px; font-size:12.5px; color: var(--ink-soft);
+  }
+  .chip:hover{ border-color: var(--primary); color: var(--primary-dark); }
+
+  /* ---------- Gastos ---------- */
+  .section-title{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom: 14px; }
+  .section-title h2{ font-size: 20px; color: var(--primary-dark); margin:0; }
+  .stat-row{ display:flex; gap:14px; margin-bottom: 20px; flex-wrap:wrap; }
+  .stat-card{
+    background: var(--paper); border:1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 18px; flex:1; min-width:150px; box-shadow: var(--shadow);
+  }
+  .stat-card .label{ font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; color: var(--ink-soft); }
+  .stat-card .value{ font-family:'IBM Plex Mono',monospace; font-size: 22px; color: var(--primary-dark); margin-top:4px; }
+
+  .upload-box{
+    background: var(--soil-soft); border: 1.5px dashed var(--soil);
+    border-radius: var(--radius); padding: 22px; display:flex; align-items:center; gap:16px;
+    margin-bottom: 18px; flex-wrap:wrap;
+  }
+  .upload-box .icon{ width:40px; height:40px; flex-shrink:0; color: var(--soil); }
+  .upload-box .text{ flex:1; min-width:180px; }
+  .upload-box .text strong{ display:block; font-size:14.5px; color: var(--ink); margin-bottom:2px; }
+  .upload-box .text span{ font-size:12.5px; color: var(--ink-soft); }
+  .btn{
+    background: var(--primary); color:#fff; border:none; border-radius: var(--radius);
+    padding: 10px 16px; font-weight:600; font-size:13.5px; white-space:nowrap;
+  }
+  .btn.secondary{ background:#fff; color: var(--primary-dark); border:1px solid var(--primary); }
+  .btn.soil{ background: var(--soil); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  #invoicePreviewWrap{ margin-top:14px; display:none; }
+  #invoicePreviewWrap img{ max-height:140px; border-radius:8px; border:1px solid var(--line); }
+
+  .manual-form{
+    display:grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap:10px; margin-bottom: 22px;
+  }
+  @media (max-width: 760px){ .manual-form{ grid-template-columns: 1fr 1fr; } }
+  .manual-form input, .manual-form select{
+    border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:13px; background:#fff;
+  }
+
+  table.ledger{ width:100%; border-collapse: collapse; background: var(--paper); border-radius: var(--radius); overflow:hidden; box-shadow: var(--shadow); }
+  table.ledger thead th{
+    text-align:left; font-size: 11.5px; text-transform:uppercase; letter-spacing:0.04em;
+    color: var(--ink-soft); padding: 12px 14px; border-bottom: 2px solid var(--line); background: #F3EFE1;
+  }
+  table.ledger tbody td{
+    padding: 11px 14px; font-size: 13.5px; border-bottom: 1px solid var(--line); vertical-align:top;
+  }
+  table.ledger tbody tr:last-child td{ border-bottom:none; }
+  table.ledger td.amount{ font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; }
+  .cat-pill{
+    font-size: 11px; padding:3px 9px; border-radius:999px; background: var(--sky-soft); color: var(--sky);
+    font-weight:600;
+  }
+  .empty-state{ text-align:center; padding: 40px 20px; color: var(--ink-soft); font-size:14px; }
+  .del-btn{ background:none; border:none; color:var(--danger); font-size:12px; text-decoration:underline; padding:0;}
+
+  .toolbar{ display:flex; justify-content:flex-end; gap:10px; margin-bottom:14px; }
+  .toast{
+    position: fixed; bottom: 22px; left:50%; transform: translateX(-50%);
+    background: var(--primary-dark); color:#fff; padding: 11px 18px; border-radius: 999px;
+    font-size: 13px; box-shadow: var(--shadow); z-index:50; opacity:0; transition: opacity 0.25s ease;
+  }
+  .toast.show{ opacity:1; }
+
+  @media (prefers-reduced-motion: reduce){
+    .msg, .profile-card{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= ONBOARDING ================= -->
+<div id="onboarding">
+  <div class="onboarding-card">
+    <div class="brandmark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8 6 5 10 5 14a7 7 0 0014 0c0-4-3-8-7-12z" fill="#2F5233"/><path d="M12 6c-1.6 2-3 4.2-3 6.6" stroke="#EADCB2" stroke-width="1.1" stroke-linecap="round"/></svg>
+      <span>Agro-Chat</span>
+    </div>
+    <h1>Tu asesor de campo, disponible las 24&nbsp;hs</h1>
+    <p class="lede">Consultas técnicas y gestión de gastos en un solo lugar. Contanos a qué te dedicás para personalizar el asesoramiento.</p>
+    <svg class="furrow" viewBox="0 0 300 14"><path d="M0 7 Q 25 0, 50 7 T 100 7 T 150 7 T 200 7 T 250 7 T 300 7" stroke="#8B5A2B" stroke-width="2" fill="none" opacity="0.6"/></svg>
+    <div class="profile-choices">
+      <div class="profile-card agri">
+        <button onclick="chooseProfile('agricultura')">
+          <div class="icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C8 6 5 10 5 14a7 7 0 0014 0c0-4-3-8-7-12z" fill="#C99A2E"/></svg>
+          </div>
+          <h3>Agricultura</h3>
+          <p>Plagas, insecticidas, clima, épocas de siembra y cosecha, y control de gastos de tu campo.</p>
+        </button>
+      </div>
+      <div class="profile-card gana">
+        <button onclick="chooseProfile('ganaderia')">
+          <div class="icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10c0-2 2-4 4-3 1-2 4-2 5 0 2-1 4 1 4 3 0 1-1 2-2 2H6c-1 0-2-1-2-2z" fill="#8B5A2B"/><circle cx="7" cy="16" r="1.4" fill="#8B5A2B"/><circle cx="15" cy="16" r="1.4" fill="#8B5A2B"/></svg>
+          </div>
+          <h3>Ganadería</h3>
+          <p>Sanidad animal, alimentación, épocas de servicio y parición, mercados y control de gastos.</p>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <div class="app-header">
+    <div class="left">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8 6 5 10 5 14a7 7 0 0014 0c0-4-3-8-7-12z" fill="#EADCB2"/></svg>
+      <span>Agro-Chat</span>
+    </div>
+    <div class="profile-badge">
+      <span class="stamp" id="profileStamp">AGRICULTURA</span>
+      <button onclick="resetProfile()">cambiar</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabAsistenteBtn" onclick="switchTab('asistente')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v12H8l-4 4V4z"/></svg>
+      Asistente
+    </button>
+    <button class="tab-btn" id="tabGastosBtn" onclick="switchTab('gastos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2h9l3 3v17H6V2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+      Gastos y facturas
+    </button>
+  </div>
+
+  <!-- ASISTENTE -->
+  <div class="panel active" id="panelAsistente">
+    <div id="chatWindow"></div>
+    <div class="suggestions" id="suggestionChips"></div>
+    <div class="chat-input-row">
+      <textarea id="chatInput" rows="1" placeholder="Escribí tu consulta..."></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+
+  <!-- GASTOS -->
+  <div class="panel" id="panelGastos">
+    <div class="section-title"><h2>Gastos y facturas</h2></div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="label">Total registrado</div><div class="value mono" id="statTotal">$0</div></div>
+      <div class="stat-card"><div class="label">Comprobantes cargados</div><div class="value mono" id="statCount">0</div></div>
+      <div class="stat-card"><div class="label">Categoría principal</div><div class="value mono" id="statTopCat" style="font-size:16px;">—</div></div>
+    </div>
+
+    <div class="upload-box">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h3l1-2h8l1 2h3v13H4V7z"/><circle cx="12" cy="13" r="3.2"/></svg>
+      <div class="text">
+        <strong>Cargá una foto de tu factura o comprobante</strong>
+        <span>La IA va a leer los datos y los va a sumar a tu planilla automáticamente.</span>
+      </div>
+      <input type="file" id="invoiceCamera" accept="image/*" capture="environment" style="display:none" onchange="handleInvoiceFile(event)">
+      <input type="file" id="invoiceFile" accept="image/*" style="display:none" onchange="handleInvoiceFile(event)">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn soil" onclick="document.getElementById('invoiceCamera').click()">Tomar foto</button>
+        <button class="btn secondary" onclick="document.getElementById('invoiceFile').click()">Subir desde galería</button>
+      </div>
+    </div>
+    <div id="invoicePreviewWrap">
+      <img id="invoicePreview" src="">
+      <div style="margin-top:10px; display:flex; gap:10px;">
+        <button class="btn" id="extractBtn" onclick="extractInvoiceData()">Extraer datos</button>
+        <button class="btn secondary" onclick="cancelInvoicePreview()">Cancelar</button>
+      </div>
+      <div id="extractStatus" style="font-size:12.5px; color:var(--ink-soft); margin-top:8px;"></div>
+    </div>
+
+    <form class="manual-form" onsubmit="addManualEntry(event)">
+      <input type="date" id="mFecha" required>
+      <input type="text" id="mConcepto" placeholder="Concepto" required>
+      <select id="mCategoria">
+        <option value="Insumos">Insumos</option>
+        <option value="Combustible">Combustible</option>
+        <option value="Hacienda">Hacienda</option>
+        <option value="Maquinaria">Maquinaria</option>
+        <option value="Servicios">Servicios</option>
+        <option value="Otros">Otros</option>
+      </select>
+      <input type="number" id="mMonto" placeholder="Monto $" step="0.01" required>
+      <button class="btn secondary" type="submit">Agregar</button>
+    </form>
+
+    <div class="toolbar">
+      <button class="btn secondary" onclick="exportExcel()">Exportar a Excel</button>
+      <button class="btn secondary" onclick="clearAllGastos()">Vaciar planilla</button>
+    </div>
+
+    <div id="ledgerWrap"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================= CONFIGURACIÓN ============================= */
+// Pegá tu clave de API de Anthropic (console.anthropic.com) para usar la app
+// fuera de Claude.ai, como app nativa instalada en un celular.
+const ANTHROPIC_API_KEY = "PEGA_TU_API_KEY_AQUI";
+
+function apiHeaders(){
+  return {
+    "Content-Type": "application/json",
+    "x-api-key": ANTHROPIC_API_KEY,
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true"
+  };
+}
+
+/* ============================= STATE ============================= */
+let profile = null;         // 'agricultura' | 'ganaderia'
+let gastos = [];            // {fecha, proveedor, concepto, categoria, monto}
+let chatHistory = [];       // {role, content}
+let pendingImage = null;    // {base64, mediaType}
+
+const SYSTEM_PROMPTS = {
+  agricultura: "Sos Agro-Chat, un asistente experto en agricultura para pequeños y medianos productores de Entre Ríos, Argentina. Ayudás con: identificación de plagas y enfermedades en cultivos, recomendación de insecticidas y fungicidas, información y pronósticos climáticos, épocas favorables de siembra y cosecha según el cultivo, y orientación financiera básica sobre la actividad agrícola. Respondé siempre en español rioplatense, de forma clara, práctica, breve y cercana, como si le hablaras a un vecino productor. Si preguntan algo fuera de lo agropecuario o financiero, aclará amablemente que no es tu especialidad.",
+  ganaderia: "Sos Agro-Chat, un asistente experto en ganadería para pequeños y medianos productores de Entre Ríos, Argentina. Ayudás con: sanidad y enfermedades del ganado, planes de vacunación, alimentación y suplementación, épocas de servicio y parición, manejo de pasturas, y orientación financiera básica sobre la actividad ganadera. Respondé siempre en español rioplatense, de forma clara, práctica, breve y cercana, como si le hablaras a un vecino productor. Si preguntan algo fuera de lo agropecuario o financiero, aclará amablemente que no es tu especialidad."
+};
+
+const SUGGESTIONS = {
+  agricultura: [
+    "¿Cómo identifico si tengo orugas en la soja?",
+    "¿Cuál es la mejor época para sembrar maíz este año?",
+    "¿Qué insecticida conviene para el picudo del algodonero?",
+    "Análisis: ¿me conviene invertir en un nuevo lote este año?"
+  ],
+  ganaderia: [
+    "¿Cada cuánto debo vacunar contra aftosa?",
+    "¿Cómo detecto mastitis en una vaca lechera?",
+    "¿Cuál es la mejor época de servicio para mi rodeo?",
+    "¿Cómo armo un presupuesto de suplementación invernal?"
+  ]
+};
+
+/* ============================= INIT ============================= */
+async function init(){
+  try{
+    const saved = localStorage.getItem('perfil');
+    if(saved){ profile = saved; }
+  }catch(e){ /* no perfil guardado */ }
+
+  try{
+    const savedGastos = localStorage.getItem('gastos');
+    if(savedGastos){ gastos = JSON.parse(savedGastos); }
+  }catch(e){ gastos = []; }
+
+  if(profile){
+    enterApp();
+  }
+}
+
+function chooseProfile(p){
+  profile = p;
+  localStorage.setItem('perfil', p);
+  enterApp();
+}
+
+function resetProfile(){
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('onboarding').style.display = 'flex';
+  chatHistory = [];
+  document.getElementById('chatWindow').innerHTML = '';
+  profile = null;
+  localStorage.removeItem('perfil');
+}
+
+function enterApp(){
+  document.getElementById('onboarding').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('profileStamp').textContent = profile.toUpperCase();
+  renderSuggestions();
+  renderLedger();
+  if(chatHistory.length === 0){
+    pushBotMessage(profile === 'agricultura'
+      ? "Hola, soy Agro-Chat 🌱 Contame qué necesitás saber sobre tu cultivo, el clima o tus gastos."
+      : "Hola, soy Agro-Chat 🌱 Contame qué necesitás saber sobre tu hacienda, sanidad animal o tus gastos.");
+  }
+}
+
+/* ============================= TABS ============================= */
+function switchTab(tab){
+  document.getElementById('panelAsistente').classList.toggle('active', tab==='asistente');
+  document.getElementById('panelGastos').classList.toggle('active', tab==='gastos');
+  document.getElementById('tabAsistenteBtn').classList.toggle('active', tab==='asistente');
+  document.getElementById('tabGastosBtn').classList.toggle('active', tab==='gastos');
+}
+
+/* ============================= CHAT ============================= */
+function renderSuggestions(){
+  const wrap = document.getElementById('suggestionChips');
+  wrap.innerHTML = '';
+  SUGGESTIONS[profile].forEach(s=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = s;
+    chip.onclick = ()=>{ document.getElementById('chatInput').value = s; sendMessage(); };
+    wrap.appendChild(chip);
+  });
+}
+
+function pushBotMessage(text, isError){
+  const win = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'msg bot' + (isError ? ' error' : '');
+  div.textContent = text;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+}
+function pushUserMessage(text){
+  const win = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.textContent = text;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+}
+function showTyping(){
+  const win = document.getElementById('chatWindow');
+  const div = document.createElement('div');
+  div.className = 'typing';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+}
+function hideTyping(){
+  const el = document.getElementById('typingIndicator');
+  if(el) el.remove();
+}
+
+async function sendMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  pushUserMessage(text);
+  chatHistory.push({role:'user', content: text});
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPTS[profile],
+        messages: chatHistory
+      })
+    });
+    const data = await response.json();
+    hideTyping();
+    const textBlock = (data.content || []).find(c => c.type === 'text');
+    const reply = textBlock ? textBlock.text : "No pude generar una respuesta, probá de nuevo.";
+    pushBotMessage(reply);
+    chatHistory.push({role:'assistant', content: reply});
+  }catch(err){
+    hideTyping();
+    pushBotMessage("Hubo un problema de conexión. Probá enviar tu consulta de nuevo en un momento.", true);
+  }finally{
+    document.getElementById('sendBtn').disabled = false;
+  }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const input = document.getElementById('chatInput');
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+  });
+});
+
+/* ============================= GASTOS ============================= */
+function handleInvoiceFile(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const base64 = reader.result.split(',')[1];
+    pendingImage = { base64, mediaType: file.type || 'image/jpeg' };
+    document.getElementById('invoicePreview').src = reader.result;
+    document.getElementById('invoicePreviewWrap').style.display = 'block';
+    document.getElementById('extractStatus').textContent = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelInvoicePreview(){
+  pendingImage = null;
+  document.getElementById('invoicePreviewWrap').style.display = 'none';
+  document.getElementById('invoiceFile').value = '';
+}
+
+async function extractInvoiceData(){
+  if(!pendingImage) return;
+  const btn = document.getElementById('extractBtn');
+  const status = document.getElementById('extractStatus');
+  btn.disabled = true;
+  status.textContent = 'Leyendo el comprobante...';
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 400,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: pendingImage.mediaType, data: pendingImage.base64 } },
+            { type: "text", text: "Esta imagen es una factura o comprobante de compra de un productor agropecuario. Extraé los datos y devolvé SOLO un objeto JSON, sin texto adicional, sin markdown, con esta forma exacta: {\"fecha\":\"YYYY-MM-DD\",\"proveedor\":\"\",\"concepto\":\"\",\"categoria\":\"Insumos|Combustible|Hacienda|Maquinaria|Servicios|Otros\",\"monto\":0}. Si no podés leer algún dato, dejalo como string vacío o 0 en el monto. El monto debe ser solo el número final, sin símbolos de moneda." }
+          ]
+        }]
+      })
+    });
+    const data = await response.json();
+    const textBlock = (data.content || []).find(c => c.type === 'text');
+    if(!textBlock) throw new Error('sin respuesta');
+    const clean = textBlock.text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    gastos.push({
+      fecha: parsed.fecha || new Date().toISOString().slice(0,10),
+      proveedor: parsed.proveedor || '—',
+      concepto: parsed.concepto || 'Sin descripción',
+      categoria: parsed.categoria || 'Otros',
+      monto: Number(parsed.monto) || 0
+    });
+    persistGastos();
+    renderLedger();
+    cancelInvoicePreview();
+    showToast('Comprobante agregado a la planilla');
+  }catch(err){
+    status.textContent = 'No se pudieron leer los datos automáticamente. Podés agregar el gasto a mano abajo.';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function addManualEntry(evt){
+  evt.preventDefault();
+  const fecha = document.getElementById('mFecha').value;
+  const concepto = document.getElementById('mConcepto').value.trim();
+  const categoria = document.getElementById('mCategoria').value;
+  const monto = parseFloat(document.getElementById('mMonto').value);
+  if(!fecha || !concepto || isNaN(monto)) return;
+  gastos.push({ fecha, proveedor: '—', concepto, categoria, monto });
+  persistGastos();
+  renderLedger();
+  evt.target.reset();
+  showToast('Gasto agregado');
+}
+
+function persistGastos(){
+  try{ localStorage.setItem('gastos', JSON.stringify(gastos)); }catch(e){ /* noop */ }
+}
+
+function deleteEntry(idx){
+  gastos.splice(idx,1);
+  persistGastos();
+  renderLedger();
+}
+
+async function clearAllGastos(){
+  gastos = [];
+  persistGastos();
+  renderLedger();
+  showToast('Planilla vaciada');
+}
+
+function fmtMoney(n){
+  return '$' + n.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function renderLedger(){
+  const total = gastos.reduce((s,g)=> s + (g.monto||0), 0);
+  document.getElementById('statTotal').textContent = fmtMoney(total);
+  document.getElementById('statCount').textContent = gastos.length;
+
+  const byCat = {};
+  gastos.forEach(g=>{ byCat[g.categoria] = (byCat[g.categoria]||0) + g.monto; });
+  const topCat = Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('statTopCat').textContent = topCat ? topCat[0] : '—';
+
+  const wrap = document.getElementById('ledgerWrap');
+  if(gastos.length === 0){
+    wrap.innerHTML = '<div class="empty-state">Todavía no cargaste gastos. Subí una foto de un comprobante o agregalo a mano arriba.</div>';
+    return;
+  }
+  const rows = gastos.map((g, i)=> `
+    <tr>
+      <td class="mono">${g.fecha}</td>
+      <td>${escapeHtml(g.proveedor)}</td>
+      <td>${escapeHtml(g.concepto)}</td>
+      <td><span class="cat-pill">${escapeHtml(g.categoria)}</span></td>
+      <td class="amount">${fmtMoney(g.monto)}</td>
+      <td><button class="del-btn" onclick="deleteEntry(${i})">quitar</button></td>
+    </tr>
+  `).join('');
+  wrap.innerHTML = `
+    <table class="ledger">
+      <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoría</th><th style="text-align:right;">Monto</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function exportExcel(){
+  if(gastos.length === 0){ showToast('No hay gastos para exportar'); return; }
+  const rows = gastos.map(g => ({
+    Fecha: g.fecha, Proveedor: g.proveedor, Concepto: g.concepto, Categoría: g.categoria, Monto: g.monto
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+  XLSX.writeFile(wb, "agro-chat-gastos.xlsx");
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+init();
+</script>
+</body>
+</html>
