@@ -1,0 +1,16 @@
+{
+  "appId": "com.agrochat.app",
+  "appName": "Agro-Chat",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera", "photos"]
+    },
+    "Filesystem": {},
+    "Preferences": {}
+  }
+}
