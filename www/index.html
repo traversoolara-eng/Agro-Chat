@@ -313,13 +313,14 @@
       <div class="profile-card gana">
         <button onclick="chooseProfile('ganaderia')">
           <div class="icon-wrap">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10c0-2 2-4 4-3 1-2 4-2 5 0 2-1 4 1 4 3 0 1-1 2-2 2H6c-1 0-2-1-2-2z" fill="#8B5A2B"/><circle cx="7" cy="16" r="1.4" fill="#8B5A2B"/><circle cx="15" cy="16" r="1.4" fill="#8B5A2B"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10c0-2 2-4 4-3 1-2 4-2 5 0 2-1 4 1 4 3 0 1-1 2-2 2H6c-1 0-2-1-2-2z" fill="#8B5A2B"/><circle cx="7" cy="16" r="1.5" fill="#8B5A2B"/></svg>
           </div>
           <h3>Ganadería</h3>
           <p>Sanidad animal, alimentación, épocas de servicio y parición, mercados y control de gastos.</p>
         </button>
       </div>
     </div>
+    <p style="margin-top: 28px; font-size: 12px; color: var(--ink-soft); text-decoration: underline;">Versión Demo para Presentación</p>
   </div>
 </div>
 
@@ -415,30 +416,27 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================= CONFIGURACIÓN ============================= */
-// Pegá tu clave de API de Anthropic (console.anthropic.com) para usar la app
-// fuera de Claude.ai, como app nativa instalada en un celular.
-const ANTHROPIC_API_KEY = "PEGA_TU_API_KEY_AQUI";
-
-function apiHeaders(){
-  return {
-    "Content-Type": "application/json",
-    "x-api-key": ANTHROPIC_API_KEY,
-    "anthropic-version": "2023-06-01",
-    "anthropic-dangerous-direct-browser-access": "true"
-  };
-}
+/* ============================= DEMO RESPONSES ============================= */
+const DEMO_RESPONSES = {
+  agricultura: {
+    "plagas": "Para identificar plagas en tu cultivo, observá los siguientes signos:\n\n• Hojas mordidas o perforadas\n• Presencia de insectos en el envés de las hojas\n• Puntos negros o manchas amarillas\n• Deformaciones en frutas o tallos\n\nTe recomiendo usar trampas pegajosas para monitoreo y, si es necesario, aplicar insecticidas selectivos en las horas de menor temperatura. También podés consultar con un ingeniero agrónomo de tu zona.",
+    "siembra": "Según el calendario agrícola de Entre Ríos:\n\n• Maíz: Octubre-Noviembre\n• Soja: Noviembre-Diciembre\n• Trigo: Abril-Mayo\n• Girasol: Noviembre-Diciembre\n\nTené en cuenta que estos períodos pueden variar según las condiciones climáticas anuales. Te sugiero verificar el pronóstico y consultar con técnicos locales antes de sembrar.",
+    "insecticida": "Para elegir el insecticida correcto:\n\n1. Identificá la plaga específica\n2. Revisá las etiquetas del producto (dosis, época de carencia)\n3. Considerá el estado fenológico del cultivo\n4. Alternálos para evitar resistencia\n5. Utilizá equipos de protección al aplicar\n\nSiempre consultá con un agroquímico de confianza o técnico.",
+    "default": "En agricultura, podés consultarme sobre:\n• Identificación de plagas y enfermedades\n• Épocas de siembra y cosecha\n• Recomendaciones de cultivos\n• Manejo del suelo\n• Control fitosanitario\n• Y más...\n\n¿Hay algo específico en lo que pueda ayudarte?"
+  },
+  ganaderia: {
+    "vacunas": "Calendario básico de vacunación para bovinos:\n\n• Aftosa: 2 veces al año\n• Carbunclo: Anualmente\n• Brucelosis: Terneras entre 3-8 meses\n• IBR-DVB: Según programa sanitario\n• Rabia: Según zona de riesgo\n\nConsultá con tu veterinario local para adaptar el programa a tu rodeo.",
+    "mastitis": "Signos de mastitis en vacas lecheras:\n\n• Leche con grumos o cambios de color\n• Inflamación y calor en la ubre\n• Dolor al ordeñe\n• Fiebre en casos severos\n\nAcciones: aislá el animal, aplicá hielo, consultá al veterinario inmediatamente. La prevención es clave: higiene del ordinal, rotación de pastos y control nutricional.",
+    "servicio": "Mejor época de servicio según tu objetivo:\n\n• Para parición en primavera: Servir en diciembre-enero\n• Para parición en verano: Servir en febrero-marzo\n\nEsto asegura que los terneros nazcan cuando hay pastura disponible. Controlá el índice de preñez regularmente.",
+    "default": "En ganadería, podés consultarme sobre:\n• Sanidad animal y vacunación\n• Reproducción y épocas de servicio\n• Nutrición y alimentación\n• Manejo de pastos\n• Razas y genética\n• Y más...\n\n¿Hay algo específico que necesites?"
+  }
+};
 
 /* ============================= STATE ============================= */
-let profile = null;         // 'agricultura' | 'ganaderia'
-let gastos = [];            // {fecha, proveedor, concepto, categoria, monto}
-let chatHistory = [];       // {role, content}
-let pendingImage = null;    // {base64, mediaType}
-
-const SYSTEM_PROMPTS = {
-  agricultura: "Sos Agro-Chat, un asistente experto en agricultura para pequeños y medianos productores de Entre Ríos, Argentina. Ayudás con: identificación de plagas y enfermedades en cultivos, recomendación de insecticidas y fungicidas, información y pronósticos climáticos, épocas favorables de siembra y cosecha según el cultivo, y orientación financiera básica sobre la actividad agrícola. Respondé siempre en español rioplatense, de forma clara, práctica, breve y cercana, como si le hablaras a un vecino productor. Si preguntan algo fuera de lo agropecuario o financiero, aclará amablemente que no es tu especialidad.",
-  ganaderia: "Sos Agro-Chat, un asistente experto en ganadería para pequeños y medianos productores de Entre Ríos, Argentina. Ayudás con: sanidad y enfermedades del ganado, planes de vacunación, alimentación y suplementación, épocas de servicio y parición, manejo de pasturas, y orientación financiera básica sobre la actividad ganadera. Respondé siempre en español rioplatense, de forma clara, práctica, breve y cercana, como si le hablaras a un vecino productor. Si preguntan algo fuera de lo agropecuario o financiero, aclará amablemente que no es tu especialidad."
-};
+let profile = null;
+let gastos = [];
+let chatHistory = [];
+let pendingImage = null;
 
 const SUGGESTIONS = {
   agricultura: [
@@ -529,6 +527,7 @@ function pushBotMessage(text, isError){
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
 }
+
 function pushUserMessage(text){
   const win = document.getElementById('chatWindow');
   const div = document.createElement('div');
@@ -537,6 +536,7 @@ function pushUserMessage(text){
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
 }
+
 function showTyping(){
   const win = document.getElementById('chatWindow');
   const div = document.createElement('div');
@@ -546,9 +546,37 @@ function showTyping(){
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
 }
+
 function hideTyping(){
   const el = document.getElementById('typingIndicator');
   if(el) el.remove();
+}
+
+function getDemoResponse(userMessage) {
+  const msg = userMessage.toLowerCase();
+  const responses = DEMO_RESPONSES[profile];
+  
+  // Buscar palabras clave en la pregunta
+  if (msg.includes('plaga') || msg.includes('oruga') || msg.includes('insecto')) {
+    return responses['plagas'];
+  }
+  if (msg.includes('siembra') || msg.includes('sembrar') || msg.includes('época')) {
+    return responses['siembra'];
+  }
+  if (msg.includes('insecticida') || msg.includes('herbicida')) {
+    return responses['insecticida'];
+  }
+  if (msg.includes('vacuna') || msg.includes('aftosa')) {
+    return responses['vacunas'];
+  }
+  if (msg.includes('mastitis') || msg.includes('ubre')) {
+    return responses['mastitis'];
+  }
+  if (msg.includes('servicio') || msg.includes('reproducción') || msg.includes('parición')) {
+    return responses['servicio'];
+  }
+  
+  return responses['default'];
 }
 
 async function sendMessage(){
@@ -559,31 +587,18 @@ async function sendMessage(){
   pushUserMessage(text);
   chatHistory.push({role:'user', content: text});
   document.getElementById('sendBtn').disabled = true;
+  
+  // Simular delay de procesamiento
   showTyping();
-  try{
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: apiHeaders(),
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        system: SYSTEM_PROMPTS[profile],
-        messages: chatHistory
-      })
-    });
-    const data = await response.json();
+  setTimeout(() => {
     hideTyping();
-    const textBlock = (data.content || []).find(c => c.type === 'text');
-    const reply = textBlock ? textBlock.text : "No pude generar una respuesta, probá de nuevo.";
+    const reply = getDemoResponse(text);
     pushBotMessage(reply);
     chatHistory.push({role:'assistant', content: reply});
-  }catch(err){
-    hideTyping();
-    pushBotMessage("Hubo un problema de conexión. Probá enviar tu consulta de nuevo en un momento.", true);
-  }finally{
     document.getElementById('sendBtn').disabled = false;
-  }
+  }, 1000 + Math.random() * 1500);
 }
+
 document.addEventListener('DOMContentLoaded', ()=>{
   const input = document.getElementById('chatInput');
   input.addEventListener('keydown', (e)=>{
@@ -618,43 +633,35 @@ async function extractInvoiceData(){
   const status = document.getElementById('extractStatus');
   btn.disabled = true;
   status.textContent = 'Leyendo el comprobante...';
-  try{
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: apiHeaders(),
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 400,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: pendingImage.mediaType, data: pendingImage.base64 } },
-            { type: "text", text: "Esta imagen es una factura o comprobante de compra de un productor agropecuario. Extraé los datos y devolvé SOLO un objeto JSON, sin texto adicional, sin markdown, con esta forma exacta: {\"fecha\":\"YYYY-MM-DD\",\"proveedor\":\"\",\"concepto\":\"\",\"categoria\":\"Insumos|Combustible|Hacienda|Maquinaria|Servicios|Otros\",\"monto\":0}. Si no podés leer algún dato, dejalo como string vacío o 0 en el monto. El monto debe ser solo el número final, sin símbolos de moneda." }
-          ]
-        }]
-      })
-    });
-    const data = await response.json();
-    const textBlock = (data.content || []).find(c => c.type === 'text');
-    if(!textBlock) throw new Error('sin respuesta');
-    const clean = textBlock.text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
-    gastos.push({
-      fecha: parsed.fecha || new Date().toISOString().slice(0,10),
-      proveedor: parsed.proveedor || '—',
-      concepto: parsed.concepto || 'Sin descripción',
-      categoria: parsed.categoria || 'Otros',
-      monto: Number(parsed.monto) || 0
-    });
-    persistGastos();
-    renderLedger();
-    cancelInvoicePreview();
-    showToast('Comprobante agregado a la planilla');
-  }catch(err){
-    status.textContent = 'No se pudieron leer los datos automáticamente. Podés agregar el gasto a mano abajo.';
-  }finally{
-    btn.disabled = false;
-  }
+  
+  // Simular extracción de datos
+  setTimeout(() => {
+    try {
+      const mockData = {
+        fecha: new Date().toISOString().slice(0,10),
+        proveedor: 'Agroquímica Demo',
+        concepto: 'Insumos agrícolas',
+        categoria: ['Insumos', 'Combustible', 'Servicios'][Math.floor(Math.random() * 3)],
+        monto: Math.round((Math.random() * 5000 + 500) * 100) / 100
+      };
+      
+      gastos.push({
+        fecha: mockData.fecha,
+        proveedor: mockData.proveedor,
+        concepto: mockData.concepto,
+        categoria: mockData.categoria,
+        monto: mockData.monto
+      });
+      persistGastos();
+      renderLedger();
+      cancelInvoicePreview();
+      showToast('Comprobante agregado a la planilla');
+    } catch(err){
+      status.textContent = 'No se pudieron leer los datos automáticamente. Podés agregar el gasto a mano abajo.';
+    } finally {
+      btn.disabled = false;
+    }
+  }, 1200);
 }
 
 function addManualEntry(evt){
