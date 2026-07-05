@@ -1,0 +1,45 @@
+{
+  "name": "agro-chat-backend",
+  "version": "1.0.0",
+  "description": "Backend API para Agro-Chat con IA y procesamiento de imágenes",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-validator": "^7.0.0",
+    "jwt-simple": "^0.5.6",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^9.0.1",
+    "@google/generative-ai": "^0.3.0",
+    "tesseract.js": "^4.1.1",
+    "sharp": "^0.33.0",
+    "mongoose": "^8.0.0",
+    "express-async-errors": "^3.1.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/cors": "^2.8.17",
+    "@types/bcryptjs": "^2.4.6",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^1.1.0"
+  }
+}
